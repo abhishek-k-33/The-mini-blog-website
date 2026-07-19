@@ -1,0 +1,28 @@
+<%- include("partials/header.ejs") %> <%# imports the header file%>
+
+<div class="hero">
+    <h2>Welcome to miniblogs</h2>
+
+    <p>A chill place to write your thoughts.</p>
+</div>
+
+<div class="posts-grid">
+    <% if (posts.length > 0) { %><%# this checks if the array contains a post or not%>
+        <% posts.forEach(post => { %>
+            <article class="post-card">
+                <h3 class="post-title"><a href="/posts/<%= post.id %>"><%= post.title %></a></h3>
+                <div class="post-meta">
+                    <span class="author">By <%= post.author %></span> | <span class="date"><%= post.date %></span>
+                </div>
+                <p class="post-excerpt"><%= post.excerpt %></p>
+                <a href="/posts/<%= post.id %>" class="read-more">Read More →</a>
+            </article>
+        <% }) %>
+    <% } else { %>
+        <div class="no-posts">
+            <p>No posts yet. <a href="/new">Be the first to write something.</a></p>
+        </div>
+    <% } %>
+</div>
+
+<%- include("partials/footer.ejs") %><%# includes the footer.      n %>

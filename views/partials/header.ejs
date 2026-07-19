@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>miniblogs</title>
+    <!-- Modern typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com"><%# includes the google fonts%>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><%# this is used for heavy font %>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <%# this tag is used to load fonts%>
+    <link rel="stylesheet" href="/styles/style.css">
+</head>
+<body class="dark-mode">
+    <script>
+        // Apply saved theme immediately to prevent flashing
+        //client side javascript which runs inside the users browser.
+
+        const savedTheme = localStorage.getItem('theme');// browser has a build in localstrorage.It allows the browser.It allows website to store
+        //small bits of text on the users computer so it remembers. Basically it remembers the theme.
+        if (savedTheme) {
+            document.body.className = savedTheme;
+        }
+    </script>
+    <header class="site-header">
+        <div class="container header-content">
+            <h1 class="logo"><a href="/">miniblogs</a></h1>
+            <nav class="main-nav">
+                <a href="/">Home</a>
+                <a href="/new" class="btn btn-primary">New Post</a>
+                <div class="theme-switch-wrapper">
+                    <label class="theme-switch" for="theme-toggle">
+                        <input type="checkbox" id="theme-toggle" checked />
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </nav>
+        </div>
+    </header>
+    <main class="container">

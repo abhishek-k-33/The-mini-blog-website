@@ -1,0 +1,38 @@
+<%- include("partials/header.ejs") %>
+
+<article class="single-post">//it grabs the title, author and date from the post object from our server and dynamically prints them into html.
+    <header class="post-header">
+        <h2><%= post.title %></h2>
+        <div class="post-meta">
+            <span class="author">By <%= post.author %></span> | <span class="date"><%= post.date %></span>
+        </div>
+    </header>
+    
+    <div class="post-content"><%# When a user types a long blog post into an HTML , their "Enter" key presses are saved as invisible newline 
+        characters(\n).known as "textareas". post.content.split('\n'): This JavaScript splits the giant text block into an array of smaller 
+        strings every time it sees a line break. p.trim().length > 0: It strips away empty spaces and ensures it isn't rendering blank paragraphs.
+        <p><%= p %></p>: It loops through those chunks of text and wrapss each one in its own HTML paragraph tag, ensuring the post is actually readable!
+        %>
+        <% 
+        // Simple way to preserve line breaks
+        const paragraphs = post.content.split('\n');
+        paragraphs.forEach(p => { 
+            if(p.trim().length > 0) { %>
+                <p><%= p %></p>
+            <% } 
+        }); %>
+    </div>
+    
+    <div class="post-actions">
+        <a href="/edit/<%= post.id %>" class="btn btn-secondary">Edit Post</a>
+        <form action="/delete/<%= post.id %>" method="POST" style="display: inline;">
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this post?');">Delete Post</button>
+        </form>
+    </div>
+</article>
+
+<div class="back-link">
+    <a href="/">← Back to Home</a>
+</div>
+
+<%- include("partials/footer.ejs") %>

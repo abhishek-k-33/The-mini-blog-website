@@ -1,0 +1,26 @@
+    </main>
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; 2026 miniblogs. All rights reserved.</p>
+        </div>
+    </footer>
+    <script>
+        // Theme toggle logic (Checkbox Slider)
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+        
+        // Ensure checkbox state matches body class on load
+        themeToggle.checked = body.classList.contains('dark-mode');
+        
+        themeToggle.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                body.className = 'dark-mode';
+                localStorage.setItem('theme', 'dark-mode');
+            } else {
+                body.className = 'light-mode';
+                localStorage.setItem('theme', 'light-mode');
+            }
+        });
+    </script>
+</body>
+</html>
