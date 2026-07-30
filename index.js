@@ -1,12 +1,7 @@
-import express from "express";// imports express for app initialization 
-import { fileURLToPath } from "url";
-import { dirname } from "path";
-import path from "path";
-import sanitizeHtml from "sanitize-html";// this line imports an external liberary which is curcial for security.
+const express = require("express");// imports express for app initialization 
+const path = require("path");
+const sanitizeHtml = require("sanitize-html");// this line imports an external liberary which is curcial for security.
 //It is used to clean html strings by stripping out potential malicious code.
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const app = express();// creates the web app
 const port = 5000;//port on which server runs
@@ -119,4 +114,4 @@ if (!process.env.VERCEL) {
     });
 }
 
-export default app;// Export the app for Vercel serverless
+module.exports = app;// Export the app for Vercel serverless
