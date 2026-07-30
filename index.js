@@ -1,11 +1,19 @@
 import express from "express";// imports express for app initialization 
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import path from "path";
 import sanitizeHtml from "sanitize-html";// this line imports an external liberary which is curcial for security.
 //It is used to clean html strings by stripping out potential malicious code.
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();// creates the web app
 const port = 5000;//port on which server runs
 
-app.use(express.static("public"));//this is a middleware which is used to get involve static files in code.
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "ejs");
+app.use(express.static(path.join(__dirname, "public")));//this is a middleware which is used to get involve static files in code.
 // Parse URL-encoded bodies (as sent by HTML forms)
 app.use(express.urlencoded({ extended: true }));//middleware. It is used to extract incoming data to the site.
 // setting the extended:true allows us to send more complex datastructures over the web.
@@ -104,6 +112,11 @@ app.post("/delete/:id", (req, res) => {
     res.redirect("/");
 });
 
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-});// listening of a port.
+// Only listen locally — Vercel uses serverless functions, not a persistent server
+if (process.env.NODE_ENV !== "production") {
+    app.listen(port, () => {
+        console.log(`Server running on port ${port}`);
+    });
+}
+
+export default app;// Export the app for Vercel serverless
