@@ -1,7 +1,5 @@
 const express = require("express");// imports express for app initialization 
 const path = require("path");
-const sanitizeHtml = require("sanitize-html");// this line imports an external liberary which is curcial for security.
-//It is used to clean html strings by stripping out potential malicious code.
 
 const app = express();// creates the web app
 const port = 5000;//port on which server runs
@@ -20,19 +18,25 @@ const generateId = () => {//this fuction generates unique ids for the users.
     // the number into a unique string that looks like "0.l5z2bq7x".Then subrtr extracts the first values of the number.
 };
 
-const generateExcerpt = (htmlContent) => {// this function takes a block of html content and turns it into a short plain text preview.
-// this is a reuseable funtion that expects a string of html data.
-    const cleanText = sanitizeHtml(htmlContent, {// uses sanitize html liberary.
-        allowedTags: [],// since the allowed tags and allowedAttributes is empty that means we are going very strict on the tags since nothing is 
-        //allowed.Because nothing is allowed, it strips out absolutely every HTML tag, converting something like <p>Hello <b>World</b></p> into 
-        // just Hello World.
-        allowedAttributes: {}
-    });
-    return cleanText.substring(0, 120) + (cleanText.length > 120 ? "..." : "");//cleantext substring 120 grabs the first 120 characters of the 
-    //newly cleaned html text + (cleanText.length > 120 ? "..." : ""): This uses a ternary operator (a shorthand if/else statement) 
-    // to check if the original cleaned text was longer than 120 characters.
-    // If it was: It appends an ellipsis (...) to the end to indicate there is more text.
-    // If it wasn't: It appends an empty string "" (meaning it adds nothing)..
+// Simple sanitizer that strips HTML tags without needing external ESM-only libraries.
+// This replaces sanitize-html which depends on htmlparser2 (ESM-only, breaks on Vercel).
+const simpleSanitize = (str) => {
+    if (!str) return "";
+    return str
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+};
+
+const stripTags = (html) => {
+    if (!html) return "";
+    return html.replace(/<[^>]*>/g, "");
+};
+
+const generateExcerpt = (content) => {// this function takes a block of content and turns it into a short plain text preview.
+    const cleanText = stripTags(content);
+    return cleanText.substring(0, 120) + (cleanText.length > 120 ? "..." : "");//grabs the first 120 characters
 };
 
 // --- ROUTES ---
@@ -48,14 +52,14 @@ app.get("/new", (req, res) => {// this shows form to create new post.
 app.post("/posts", (req, res) => {// Create a new post
     const { title, content, author } = req.body;// this collects the title,content and author out of the body of the html.
     
-    const cleanContent = sanitizeHtml(content);// this cleans the content comming from the body.
+    const cleanContent = simpleSanitize(content);// this cleans the content comming from the body.
 
     const newPost = {
         id: generateId(),//creates a newpost blog post interface with id,title,content,text,author and date.
-        title,
+        title: simpleSanitize(title),
         content: cleanContent,
-        excerpt: generateExcerpt(cleanContent),
-        author,
+        excerpt: generateExcerpt(content),
+        author: simpleSanitize(author),
         date: new Date().toLocaleDateString()
     };
     posts.push(newPost);//pushes the current post into an already exisiting array for temporary storge.
@@ -86,13 +90,13 @@ app.post("/update/:id", (req, res) => {
     const postIndex = posts.findIndex(p => p.id === req.params.id);
     
     if (postIndex !== -1) {
-        const cleanContent = sanitizeHtml(content);
+        const cleanContent = simpleSanitize(content);
         posts[postIndex] = {
             ...posts[postIndex],
-            title,
+            title: simpleSanitize(title),
             content: cleanContent,
-            excerpt: generateExcerpt(cleanContent),
-            author,
+            excerpt: generateExcerpt(content),
+            author: simpleSanitize(author),
             // Keep original date, or update it
         };
         res.redirect(`/posts/${req.params.id}`);
