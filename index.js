@@ -112,8 +112,8 @@ app.post("/delete/:id", (req, res) => {
     res.redirect("/");
 });
 
-// Only listen locally — Vercel uses serverless functions, not a persistent server
-if (process.env.NODE_ENV !== "production") {
+// Only listen locally — on Vercel, the VERCEL env var is automatically set
+if (!process.env.VERCEL) {
     app.listen(port, () => {
         console.log(`Server running on port ${port}`);
     });
