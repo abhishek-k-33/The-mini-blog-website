@@ -17,11 +17,13 @@ app.use(express.urlencoded({ extended: true }));//middleware. It is used to extr
 // Locally: uses a JSON file so posts survive server restarts.
 
 let redis = null;
-if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+const redisUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+const redisToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+if (redisUrl && redisToken) {
     const { Redis } = require("@upstash/redis");
     redis = new Redis({
-        url: process.env.KV_REST_API_URL,
-        token: process.env.KV_REST_API_TOKEN,
+        url: redisUrl,
+        token: redisToken,
     });
 }
 
@@ -102,7 +104,10 @@ app.get("/debug", async (req, res) => {
         redisConnected: redis !== null,
         hasKvUrl: !!process.env.KV_REST_API_URL,
         hasKvToken: !!process.env.KV_REST_API_TOKEN,
+        hasUpstashUrl: !!process.env.UPSTASH_REDIS_REST_URL,
+        hasUpstashToken: !!process.env.UPSTASH_REDIS_REST_TOKEN,
         isVercel: !!process.env.VERCEL,
+        envKeys: Object.keys(process.env).filter(k => k.includes('KV') || k.includes('UPSTASH') || k.includes('REDIS')),
     };
     if (redis) {
         try {
