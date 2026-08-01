@@ -12,29 +12,55 @@ app.use(express.static(path.join(__dirname, "public")));//this is a middleware w
 app.use(express.urlencoded({ extended: true }));//middleware. It is used to extract incoming data to the site.
 // setting the extended:true allows us to send more complex datastructures over the web.
 
-// --- FILE-BASED PERSISTENCE ---
-// Posts are saved to a JSON file so they survive server restarts.
-// On Vercel, the filesystem is read-only except for the /tmp directory.
-const DATA_FILE = process.env.VERCEL ? "/tmp/data.json" : path.join(__dirname, "data.json");
-let memoryPosts = [];
+// --- DATA PERSISTENCE ---
+// On Vercel: uses Upstash Redis (a cloud database) so posts survive across serverless invocations.
+// Locally: uses a JSON file so posts survive server restarts.
 
-// Reads all posts from the JSON file. Returns an empty array if the file doesn't exist yet.
-const readPosts = () => {
+let redis = null;
+if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+    const { Redis } = require("@upstash/redis");
+    redis = new Redis({
+        url: process.env.KV_REST_API_URL,
+        token: process.env.KV_REST_API_TOKEN,
+    });
+}
+
+const DATA_FILE = path.join(__dirname, "data.json");
+
+// Reads all posts. Uses Redis on Vercel, file locally.
+const readPosts = async () => {
+    if (redis) {
+        try {
+            const posts = await redis.get("posts");
+            return posts || [];
+        } catch (err) {
+            console.error("Error reading from Redis:", err);
+            return [];
+        }
+    }
+    // Local fallback: read from JSON file
     try {
         if (fs.existsSync(DATA_FILE)) {
             const data = fs.readFileSync(DATA_FILE, "utf-8");
-            memoryPosts = JSON.parse(data);
-            return memoryPosts;
+            return JSON.parse(data);
         }
     } catch (err) {
         console.error("Error reading posts file:", err);
     }
-    return memoryPosts;
+    return [];
 };
 
-// Writes the posts array to the JSON file.
-const writePosts = (posts) => {
-    memoryPosts = posts;
+// Writes all posts. Uses Redis on Vercel, file locally.
+const writePosts = async (posts) => {
+    if (redis) {
+        try {
+            await redis.set("posts", posts);
+        } catch (err) {
+            console.error("Error writing to Redis:", err);
+        }
+        return;
+    }
+    // Local fallback: write to JSON file
     try {
         fs.writeFileSync(DATA_FILE, JSON.stringify(posts, null, 2), "utf-8");
     } catch (err) {
@@ -70,9 +96,9 @@ const generateExcerpt = (content) => {// this function takes a block of content 
 
 // --- ROUTES ---
 
-app.get("/", (req, res) => {//this is the get rout to display all posts at the home page of the website.
+app.get("/", async (req, res) => {//this is the get rout to display all posts at the home page of the website.
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    const posts = readPosts();// reads all posts from the JSON file
+    const posts = await readPosts();// reads all posts from the database
     res.render("index.ejs", { posts: posts });//sends the data recived by the user to the ejs file.
 });
 
@@ -80,7 +106,7 @@ app.get("/new", (req, res) => {// this shows form to create new post.
     res.render("new.ejs");
 });
 
-app.post("/posts", (req, res) => {// Create a new post
+app.post("/posts", async (req, res) => {// Create a new post
     const { title, content, author } = req.body;// this collects the title,content and author out of the body of the html.
     
     const cleanContent = simpleSanitize(content);// this cleans the content comming from the body.
@@ -93,14 +119,14 @@ app.post("/posts", (req, res) => {// Create a new post
         author: simpleSanitize(author),
         date: new Date().toLocaleDateString()
     };
-    const posts = readPosts();// reads existing posts from the file
+    const posts = await readPosts();// reads existing posts from the database
     posts.push(newPost);//pushes the current post into the array.
-    writePosts(posts);// saves the updated array back to the JSON file so it persists.
+    await writePosts(posts);// saves the updated array to the database so it persists.
     res.redirect("/");//after the post has been made the user will be redirected to the homepage.
 });
 
-app.get("/posts/:id", (req, res) => {// View a specific post
-    const posts = readPosts();// reads all posts from the file
+app.get("/posts/:id", async (req, res) => {// View a specific post
+    const posts = await readPosts();// reads all posts from the database
     const post = posts.find(p => p.id === req.params.id);// uses the builtin javascript array function.find to search through the post array.
     if (post) {
         res.render("post.ejs", { post: post });
@@ -109,8 +135,8 @@ app.get("/posts/:id", (req, res) => {// View a specific post
     }
 });
 
-app.get("/edit/:id", (req, res) => {// GET /edit/:id: Show form to edit a post
-    const posts = readPosts();// reads all posts from the file
+app.get("/edit/:id", async (req, res) => {// GET /edit/:id: Show form to edit a post
+    const posts = await readPosts();// reads all posts from the database
     const post = posts.find(p => p.id === req.params.id);// compares the id of the current post to the user typed in id.
     if (post) {
         res.render("edit.ejs", { post: post });
@@ -120,9 +146,9 @@ app.get("/edit/:id", (req, res) => {// GET /edit/:id: Show form to edit a post
 });
 
 // POST /update/:id: Update an existing post
-app.post("/update/:id", (req, res) => {
+app.post("/update/:id", async (req, res) => {
     const { title, content, author } = req.body;
-    const posts = readPosts();// reads all posts from the file
+    const posts = await readPosts();// reads all posts from the database
     const postIndex = posts.findIndex(p => p.id === req.params.id);
     
     if (postIndex !== -1) {
@@ -135,7 +161,7 @@ app.post("/update/:id", (req, res) => {
             author: simpleSanitize(author),
             // Keep original date, or update it
         };
-        writePosts(posts);// saves the updated array back to the JSON file
+        await writePosts(posts);// saves the updated array to the database
         res.redirect(`/posts/${req.params.id}`);
     } else {
         res.status(404).send("Post not found");
@@ -143,10 +169,10 @@ app.post("/update/:id", (req, res) => {
 });
 
 // POST /delete/:id: Delete a post
-app.post("/delete/:id", (req, res) => {
-    let posts = readPosts();// reads all posts from the file
+app.post("/delete/:id", async (req, res) => {
+    let posts = await readPosts();// reads all posts from the database
     posts = posts.filter(p => p.id !== req.params.id);
-    writePosts(posts);// saves the updated array back to the JSON file
+    await writePosts(posts);// saves the updated array to the database
     res.redirect("/");
 });
 
