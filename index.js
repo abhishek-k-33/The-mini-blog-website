@@ -16,23 +16,25 @@ app.use(express.urlencoded({ extended: true }));//middleware. It is used to extr
 // Posts are saved to a JSON file so they survive server restarts.
 // On Vercel, the filesystem is read-only except for the /tmp directory.
 const DATA_FILE = process.env.VERCEL ? "/tmp/data.json" : path.join(__dirname, "data.json");
-
+let memoryPosts = [];
 
 // Reads all posts from the JSON file. Returns an empty array if the file doesn't exist yet.
 const readPosts = () => {
     try {
         if (fs.existsSync(DATA_FILE)) {
             const data = fs.readFileSync(DATA_FILE, "utf-8");
-            return JSON.parse(data);
+            memoryPosts = JSON.parse(data);
+            return memoryPosts;
         }
     } catch (err) {
         console.error("Error reading posts file:", err);
     }
-    return [];
+    return memoryPosts;
 };
 
 // Writes the posts array to the JSON file.
 const writePosts = (posts) => {
+    memoryPosts = posts;
     try {
         fs.writeFileSync(DATA_FILE, JSON.stringify(posts, null, 2), "utf-8");
     } catch (err) {
@@ -69,6 +71,7 @@ const generateExcerpt = (content) => {// this function takes a block of content 
 // --- ROUTES ---
 
 app.get("/", (req, res) => {//this is the get rout to display all posts at the home page of the website.
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     const posts = readPosts();// reads all posts from the JSON file
     res.render("index.ejs", { posts: posts });//sends the data recived by the user to the ejs file.
 });
