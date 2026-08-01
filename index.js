@@ -17,8 +17,8 @@ app.use(express.urlencoded({ extended: true }));//middleware. It is used to extr
 // Locally: uses a JSON file so posts survive server restarts.
 
 let redis = null;
-const redisUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const redisToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+const redisUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || process.env.mini_KV_REST_API_URL;
+const redisToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || process.env.mini_KV_REST_API_TOKEN;
 if (redisUrl && redisToken) {
     const { Redis } = require("@upstash/redis");
     redis = new Redis({
