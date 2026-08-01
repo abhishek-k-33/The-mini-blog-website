@@ -13,8 +13,10 @@ app.use(express.urlencoded({ extended: true }));//middleware. It is used to extr
 // setting the extended:true allows us to send more complex datastructures over the web.
 
 // --- FILE-BASED PERSISTENCE ---
-// Posts are saved to a JSON file so they survive server restarts and Vercel serverless invocations.
-const DATA_FILE = path.join(__dirname, "data.json");
+// Posts are saved to a JSON file so they survive server restarts.
+// On Vercel, the filesystem is read-only except for the /tmp directory.
+const DATA_FILE = process.env.VERCEL ? "/tmp/data.json" : path.join(__dirname, "data.json");
+
 
 // Reads all posts from the JSON file. Returns an empty array if the file doesn't exist yet.
 const readPosts = () => {
