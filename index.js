@@ -96,6 +96,26 @@ const generateExcerpt = (content) => {// this function takes a block of content 
 
 // --- ROUTES ---
 
+// Temporary debug route — remove after confirming Redis works
+app.get("/debug", async (req, res) => {
+    const info = {
+        redisConnected: redis !== null,
+        hasKvUrl: !!process.env.KV_REST_API_URL,
+        hasKvToken: !!process.env.KV_REST_API_TOKEN,
+        isVercel: !!process.env.VERCEL,
+    };
+    if (redis) {
+        try {
+            await redis.set("test", "hello");
+            const val = await redis.get("test");
+            info.redisTestResult = val;
+        } catch (err) {
+            info.redisError = err.message;
+        }
+    }
+    res.json(info);
+});
+
 app.get("/", async (req, res) => {//this is the get rout to display all posts at the home page of the website.
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     const posts = await readPosts();// reads all posts from the database
